@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Leaf, Box } from 'lucide-react';
+import { Settings, Plus, Leaf, Box, Trash2 } from 'lucide-react';
 import PlantDetails from './PlantDetails';
 import '../index.css';
 
@@ -58,9 +58,16 @@ const PlantConstructor = () => {
         } catch (e) { console.error(e); }
     };
 
+    const handleDeleteGrow = async (id) => {
+        if (!confirm('Удалить этот бокс и все растения в нем?')) return;
+        try {
+            await fetch(`/api/grows/${id}`, { method: 'DELETE' });
+            fetchGrows();
+        } catch (e) { console.error(e); }
+    };
+
     const handleCreateSecondBox = async () => {
-        if (grows.length >= 2) return;
-        await createGrow('Бокс #2');
+        await createGrow(`Бокс #${grows.length + 1}`);
         fetchGrows();
     };
 
@@ -102,25 +109,43 @@ const PlantConstructor = () => {
                     {/* Grow Switcher */}
                     <div style={{ display: 'flex', gap: '8px' }}>
                         {grows.map(g => (
-                            <button
-                                key={g.id}
-                                onClick={() => setCurrentGrow(g)}
-                                style={{
-                                    background: currentGrow?.id === g.id ? '#818cf8' : 'rgba(255,255,255,0.1)',
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '6px 12px',
-                                    borderRadius: '12px',
-                                    fontSize: '13px',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                {g.name}
-                            </button>
+                            <div key={g.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <button
+                                    onClick={() => setCurrentGrow(g)}
+                                    style={{
+                                        background: currentGrow?.id === g.id ? '#818cf8' : 'rgba(255,255,255,0.1)',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '6px 12px',
+                                        borderRadius: '12px',
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        paddingRight: '30px'
+                                    }}
+                                >
+                                    {g.name}
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteGrow(g.id); }}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '4px',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: currentGrow?.id === g.id ? 'white' : '#94a3b8',
+                                        cursor: 'pointer',
+                                        opacity: 0.7,
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
                         ))}
-                        {grows.length < 2 && (
+                        {grows.length < 3 && (
                             <button onClick={handleCreateSecondBox} style={{ background: 'transparent', border: '1px dashed #64748b', color: '#94a3b8', borderRadius: '12px', padding: '6px 10px', fontSize: '12px' }}>
                                 + Бокс
                             </button>
