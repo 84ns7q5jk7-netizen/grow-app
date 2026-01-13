@@ -108,8 +108,27 @@ const PlantConstructor = () => {
                     <h1 className="title-large" style={{ marginBottom: '5px' }}>
                         {currentGrow ? currentGrow.name : 'Мой Сад 🌱'}
                     </h1>
-                    <div style={{ color: '#94a3b8', fontSize: '13px' }}>
-                        {currentGrow ? 'Ваш личный гроубокс' : 'Загрузка...'}
+
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {grows.map(g => (
+                            <button
+                                key={g.id}
+                                onClick={() => setCurrentGrow(g)}
+                                style={{
+                                    background: currentGrow?.id === g.id ? '#818cf8' : 'rgba(255,255,255,0.1)',
+                                    color: 'white',
+                                    border: currentGrow?.id === g.id ? '1px solid #818cf8' : '1px solid rgba(255,255,255,0.1)',
+                                    padding: '8px 16px',
+                                    borderRadius: '12px',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {g.name}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
