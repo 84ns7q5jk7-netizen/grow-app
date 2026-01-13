@@ -31,7 +31,7 @@ const PlantConstructor = () => {
             let data = await res.json();
             // Ensure at least 1 grow
             if (data.data.length === 0) {
-                const newGrow = await createGrow('Бокс #1');
+                const newGrow = await createGrow('Мой Гроубокс');
                 data.data = [newGrow];
             }
             setGrows(data.data);
@@ -105,60 +105,42 @@ const PlantConstructor = () => {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div>
-                    <h1 className="title-large" style={{ marginBottom: '5px' }}>Гроубокс</h1>
-                    {/* Grow Switcher */}
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        {grows.map(g => (
-                            <div key={g.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                <button
-                                    onClick={() => setCurrentGrow(g)}
-                                    style={{
-                                        background: currentGrow?.id === g.id ? '#818cf8' : 'rgba(255,255,255,0.1)',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '6px 12px',
-                                        borderRadius: '12px',
-                                        fontSize: '13px',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        paddingRight: '30px'
-                                    }}
-                                >
-                                    {g.name}
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteGrow(g.id); }}
-                                    style={{
-                                        position: 'absolute',
-                                        right: '4px',
-                                        background: 'none',
-                                        border: 'none',
-                                        color: currentGrow?.id === g.id ? 'white' : '#94a3b8',
-                                        cursor: 'pointer',
-                                        opacity: 0.7,
-                                        display: 'flex',
-                                        alignItems: 'center'
-                                    }}
-                                >
-                                    <Trash2 size={14} />
-                                </button>
-                            </div>
-                        ))}
-                        {grows.length < 3 && (
-                            <button onClick={handleCreateSecondBox} style={{ background: 'transparent', border: '1px dashed #64748b', color: '#94a3b8', borderRadius: '12px', padding: '6px 10px', fontSize: '12px' }}>
-                                + Бокс
-                            </button>
-                        )}
+                    <h1 className="title-large" style={{ marginBottom: '5px' }}>
+                        {currentGrow ? currentGrow.name : 'Мой Сад 🌱'}
+                    </h1>
+                    <div style={{ color: '#94a3b8', fontSize: '13px' }}>
+                        {currentGrow ? 'Ваш личный гроубокс' : 'Загрузка...'}
                     </div>
                 </div>
 
-                <button
-                    onClick={() => setShowConfig(!showConfig)}
-                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c084fc' }}
-                >
-                    <Settings size={22} />
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {/* Delete Current Box (Hidden feature for total reset if needed, or we can keep it as 'Reset') */}
+                    {currentGrow && (
+                        <button
+                            onClick={() => handleDeleteGrow(currentGrow.id)}
+                            style={{
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: 'none',
+                                borderRadius: '12px',
+                                width: '40px',
+                                height: '40px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#f87171'
+                            }}
+                        >
+                            <Trash2 size={20} />
+                        </button>
+                    )}
+
+                    <button
+                        onClick={() => setShowConfig(!showConfig)}
+                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c084fc' }}
+                    >
+                        <Settings size={22} />
+                    </button>
+                </div>
             </div>
 
             {showConfig && (
