@@ -153,6 +153,21 @@ app.post('/api/notes', (req, res) => {
     );
 });
 
+// Delete a grow
+app.delete('/api/grows/:id', (req, res) => {
+    const { id } = req.params;
+    db.serialize(() => {
+        db.run('DELETE FROM plants WHERE grow_id = ?', id);
+        db.run('DELETE FROM grows WHERE id = ?', id, function (err) {
+            if (err) {
+                res.status(400).json({ error: err.message });
+                return;
+            }
+            res.json({ message: 'Deleted', changes: this.changes });
+        });
+    });
+});
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
