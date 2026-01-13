@@ -55,6 +55,19 @@ db.serialize(() => {
         FOREIGN KEY(plant_id) REFERENCES plants(id),
         FOREIGN KEY(grow_id) REFERENCES grows(id)
     )`);
+
+    // SEEDING: Ensure 2 Fixed Boxes exist (4x2)
+    db.get("SELECT count(*) as count FROM grows", (err, row) => {
+        if (err) console.error(err);
+        else if (row.count === 0) {
+            console.log("Seeding Database with 2 Fixed Boxes...");
+            const stmt = db.prepare("INSERT INTO grows (name, width, length) VALUES (?, ?, ?)");
+            stmt.run("Бокс 1", 4, 2);
+            stmt.run("Бокс 2", 4, 2);
+            stmt.finalize();
+            console.log("Seeding Complete.");
+        }
+    });
 });
 
 module.exports = db;
