@@ -96,25 +96,42 @@ const PlantDetails = ({ plant, onClose }) => {
                 <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ flex: 1 }}>
                         {isEditing ? (
-                            <input
-                                className="input-field"
-                                value={editData.name}
-                                onChange={e => setEditData({ ...editData, name: e.target.value })}
-                                style={{
-                                    fontSize: '24px',
-                                    fontWeight: 'bold',
-                                    padding: '5px',
-                                    background: 'rgba(255,255,255,0.1)',
-                                    border: '1px solid #4ade80'
-                                }}
-                                autoFocus
-                            />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <input
+                                    className="input-field"
+                                    value={editData.name}
+                                    onChange={e => setEditData({ ...editData, name: e.target.value })}
+                                    placeholder="Название"
+                                    style={{
+                                        fontSize: '24px',
+                                        fontWeight: 'bold',
+                                        padding: '5px',
+                                        background: 'rgba(255,255,255,0.1)',
+                                        border: '1px solid #4ade80'
+                                    }}
+                                    autoFocus
+                                />
+                                <input
+                                    className="input-field"
+                                    value={editData.strain}
+                                    onChange={e => setEditData({ ...editData, strain: e.target.value })}
+                                    placeholder="Сорт (Strain)"
+                                    style={{
+                                        fontSize: '14px',
+                                        padding: '5px',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        color: '#cbd5e1'
+                                    }}
+                                />
+                            </div>
                         ) : (
-                            <h2 onClick={() => setIsEditing(true)} style={{ margin: 0, fontSize: '28px', color: '#f8fafc' }}>{editData.name}</h2>
+                            <>
+                                <h2 onClick={() => setIsEditing(true)} style={{ margin: 0, fontSize: '28px', color: '#f8fafc' }}>{editData.name}</h2>
+                                <div style={{ color: '#94a3b8', fontSize: '14px', marginTop: '4px' }}>
+                                    {editData.strain || 'Сорт'} • {editData.stage}
+                                </div>
+                            </>
                         )}
-                        <div style={{ color: '#94a3b8', fontSize: '14px', marginTop: '4px' }}>
-                            {editData.strain || 'Сорт'} • {editData.stage}
-                        </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -165,6 +182,33 @@ const PlantDetails = ({ plant, onClose }) => {
                 <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 40px 20px' }}>
                     {activeTab === 'info' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                            {/* Age & Status Badge */}
+                            {!isEditing && plant.planted_date && (
+                                <div style={{
+                                    background: 'rgba(99, 102, 241, 0.1)',
+                                    border: '1px solid #6366f1',
+                                    borderRadius: '16px',
+                                    padding: '15px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <Calendar color="#818cf8" size={24} />
+                                        <div>
+                                            <div style={{ color: '#c7d2fe', fontSize: '13px' }}>Возраст</div>
+                                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#e0e7ff' }}>
+                                                День {Math.floor((new Date() - new Date(plant.planted_date)) / (1000 * 60 * 60 * 24)) + 1}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ color: '#94a3b8', fontSize: '12px' }}>Стадия</div>
+                                        <div style={{ color: 'white', fontWeight: '500' }}>{plant.stage}</div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Actions Panel */}
                             {!showWaterForm ? (
@@ -236,7 +280,7 @@ const PlantDetails = ({ plant, onClose }) => {
 
                                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                     <div>
-                                        <label style={{ fontSize: '13px', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>Посадка</label>
+                                        <label style={{ fontSize: '13px', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>Старт (День 1)</label>
                                         {isEditing ? (
                                             <input type="date" className="input-field" value={editData.planted_date} onChange={e => setEditData({ ...editData, planted_date: e.target.value })} style={{ padding: '10px', fontSize: '14px', width: '100%' }} />
                                         ) : (
@@ -252,6 +296,24 @@ const PlantDetails = ({ plant, onClose }) => {
                                         )}
                                     </div>
                                 </div>
+
+                                {isEditing && (
+                                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px', marginTop: '20px' }}>
+                                        <label style={{ fontSize: '13px', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>Стадия</label>
+                                        <select
+                                            className="input-field"
+                                            value={editData.stage}
+                                            onChange={e => setEditData({ ...editData, stage: e.target.value })}
+                                            style={{ width: '100%', padding: '10px' }}
+                                        >
+                                            <option value="Росток">Росток 🌱</option>
+                                            <option value="Вегетация">Вегетация 🌿</option>
+                                            <option value="Цветение">Цветение 🌸</option>
+                                            <option value="Сушка">Сушка 🍂</option>
+                                            <option value="Пролечка">Пролечка 🏺</option>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
