@@ -210,47 +210,13 @@ const PlantDetails = ({ plant, onClose }) => {
                                 </div>
                             )}
 
-                            {/* Actions Panel */}
-                            {!showWaterForm ? (
-                                <div style={{ display: 'flex', gap: '15px' }}>
-                                    <button onClick={() => setShowWaterForm(true)} style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', border: '1px solid #06b6d4', background: 'rgba(6, 182, 212, 0.1)', borderRadius: '20px' }}>
-                                        <div style={{ background: 'rgba(6, 182, 212, 0.2)', padding: '12px', borderRadius: '50%' }}>
-                                            <Droplets color="#06b6d4" size={24} />
-                                        </div>
-                                        <span style={{ fontWeight: '600', color: '#cffafe' }}>Полить</span>
-                                    </button>
-                                    <button style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', border: '1px solid #4ade80', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '20px' }}>
-                                        <div style={{ background: 'rgba(74, 222, 128, 0.2)', padding: '12px', borderRadius: '50%' }}>
-                                            <Sprout color="#4ade80" size={24} />
-                                        </div>
-                                        <span style={{ fontWeight: '600', color: '#dcfce7' }}>Удобрить</span>
-                                    </button>
-                                </div>
-                            ) : (
-                                <div style={{ padding: '20px', background: 'rgba(6, 182, 212, 0.05)', border: '1px solid #06b6d4', borderRadius: '20px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                        <h3 style={{ margin: 0 }}>💧 Запись полива</h3>
-                                        <button onClick={() => setShowWaterForm(false)} style={{ background: 'none', border: 'none', color: '#94a3b8' }}><X size={18} /></button>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                                        <div>
-                                            <label className="text-secondary" style={{ fontSize: '13px' }}>Объем (Л)</label>
-                                            <input type="number" className="input-field" value={waterVolume} onChange={e => setWaterVolume(e.target.value)} placeholder="0.0" style={{ fontSize: '18px', padding: '12px' }} />
-                                        </div>
-                                        <div>
-                                            <label className="text-secondary" style={{ fontSize: '13px' }}>pH</label>
-                                            <input type="number" className="input-field" value={waterPH} onChange={e => setWaterPH(e.target.value)} placeholder="6.5" style={{ fontSize: '18px', padding: '12px' }} />
-                                        </div>
-                                    </div>
-                                    <div style={{ marginBottom: '15px' }}>
-                                        <label className="text-secondary" style={{ fontSize: '13px' }}>Удобрения (мл/л)</label>
-                                        <input type="text" className="input-field" value={waterNutrients} onChange={e => setWaterNutrients(e.target.value)} placeholder="A: 2, B: 2" style={{ padding: '12px' }} />
-                                    </div>
-                                    <button className="btn-primary" onClick={handleWater} disabled={isSaving} style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                                        {isSaving ? <Loader2 className="spin" /> : 'Сохранить'}
-                                    </button>
-                                </div>
-                            )}
+                            {/* Actions Panel Removed as per request */}
+
+                            {/* Water Form (Hidden/Removed for now, or we can keep the logic but remove the entry points) */}
+                            {/* If we strictly follow "remove buttons", we should remove the UI entry points. 
+                                The form state `showWaterForm` will just never be true. 
+                                I will comment it out or remove it to clean up the code.
+                            */}
 
                             {/* Params Panel */}
                             <div style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
