@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Leaf, Box, Trash2 } from 'lucide-react';
+import { Settings, Plus, Leaf, Box, Trash2, X } from 'lucide-react';
 import PlantDetails from './PlantDetails';
 import '../index.css';
 
@@ -44,7 +44,7 @@ const PlantConstructor = () => {
         const res = await fetch('/api/grows', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, width: 4, length: 3 })
+            body: JSON.stringify({ name, dimensions: '4x2', type: 'indoor' })
         });
         const data = await res.json();
         return { id: data.id, name };
@@ -102,45 +102,106 @@ const PlantConstructor = () => {
 
     return (
         <div style={{ padding: '20px', paddingBottom: '100px', animation: 'fadeIn 0.3s' }}>
-            {/* Header */}
+            {/* New Premium Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+                <div style={{ padding: '8px', cursor: 'pointer' }}>
+                    <X size={24} color="white" />
+                </div>
+                <div style={{
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    padding: '8px 16px',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                    <div style={{
+                        background: '#f87171',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                    }}>G</div>
+                    <span style={{ fontSize: '15px', fontWeight: '500', color: '#cbd5e1' }}>grow tracker</span>
+                </div>
+            </div>
+
+            {/* Header Title */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div>
-                    <h1 className="title-large" style={{ marginBottom: '5px' }}>
-                        {currentGrow ? currentGrow.name : 'Мой Сад 🌱'}
+                    <h1 className="title-large" style={{ marginBottom: '20px', fontSize: '42px', fontWeight: '800' }}>
+                        {currentGrow ? 'Мой Гроубокс' : 'Мой Сад'}
                     </h1>
 
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '12px',
+                        width: '100%'
+                    }}>
                         {grows.map(g => (
                             <button
                                 key={g.id}
                                 onClick={() => setCurrentGrow(g)}
                                 style={{
-                                    background: currentGrow?.id === g.id ? '#818cf8' : 'rgba(255,255,255,0.1)',
+                                    background: currentGrow?.id === g.id ? '#818cf8' : 'rgba(30, 41, 59, 0.6)',
                                     color: 'white',
-                                    border: currentGrow?.id === g.id ? '1px solid #818cf8' : '1px solid rgba(255,255,255,0.1)',
-                                    padding: '8px 16px',
-                                    borderRadius: '12px',
-                                    fontSize: '14px',
+                                    border: currentGrow?.id === g.id ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                                    padding: '16px',
+                                    borderRadius: '16px',
+                                    fontSize: '16px',
                                     fontWeight: '600',
                                     cursor: 'pointer',
-                                    transition: 'all 0.2s'
+                                    transition: 'all 0.2s',
+                                    textAlign: 'center',
+                                    boxShadow: currentGrow?.id === g.id ? '0 4px 15px rgba(129, 140, 248, 0.4)' : 'none'
                                 }}
                             >
-                                {g.name}
+                                {g.name === 'Мой Гроубокс' ? 'Мой Гроубокс' : g.name}
                             </button>
                         ))}
+
+                        {/* Add New Box Placeholder if needed */}
+                        <button
+                            onClick={handleCreateSecondBox}
+                            style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                color: 'rgba(255,255,255,0.3)',
+                                border: '1px dashed rgba(255,255,255,0.2)',
+                                padding: '16px',
+                                borderRadius: '16px',
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <Plus size={20} />
+                        </button>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {/* Delete Current Box (Hidden feature for total reset if needed, or we can keep it as 'Reset') */}
+                <div style={{ display: 'flex', gap: '10px', position: 'absolute', top: '105px', right: '20px' }}>
+                    <button
+                        onClick={() => setShowConfig(!showConfig)}
+                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c084fc' }}
+                    >
+                        <Settings size={22} />
+                    </button>
                     {currentGrow && (
                         <button
                             onClick={() => handleDeleteGrow(currentGrow.id)}
                             style={{
                                 background: 'rgba(239, 68, 68, 0.1)',
                                 border: 'none',
-                                borderRadius: '12px',
+                                borderRadius: '50%',
                                 width: '40px',
                                 height: '40px',
                                 display: 'flex',
@@ -152,13 +213,6 @@ const PlantConstructor = () => {
                             <Trash2 size={20} />
                         </button>
                     )}
-
-                    <button
-                        onClick={() => setShowConfig(!showConfig)}
-                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c084fc' }}
-                    >
-                        <Settings size={22} />
-                    </button>
                 </div>
             </div>
 
@@ -224,7 +278,7 @@ const PlantConstructor = () => {
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '30px', color: '#64748b', fontSize: '13px' }}>
-                {currentGrow ? `Бокс: ${currentGrow.name}` : 'Загрузка...'}
+                {currentGrow ? `Бокс: ${currentGrow.name === 'Мой Гроубокс' ? 'Мой Гроубокс' : currentGrow.name}` : 'Загрузка...'}
             </div>
 
             {selectedPlant && (

@@ -168,6 +168,42 @@ app.delete('/api/grows/:id', (req, res) => {
     });
 });
 
+// --- ESP32 Integration ---
+
+// Receive sensor data
+app.post('/api/sensors', (req, res) => {
+    // Default grow_id to 1 if not provided (temp hack for single box)
+    const { grow_id = 1, temperature, humidity, soil_moisture, soil } = req.body;
+    const finalSoil = soil_moisture || soil;
+
+    console.log(`[Sensor Data] Temp: ${temperature}, Hum: ${humidity}, Soil: ${finalSoil}`);
+
+    db.run(
+        "INSERT INTO environment_logs (grow_id, temperature, humidity, soil_moisture, timestamp) VALUES (?, ?, ?, ?, ?)",
+        [grow_id, temperature, humidity, finalSoil, new Date().toISOString()],
+        function (err) {
+            if (err) {
+                console.error("Error saving sensor data:", err.message);
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ success: true, id: this.lastID });
+        }
+    );
+});
+
+// Get latest sensor data
+app.get('/api/sensors/latest', (req, res) => {
+    const growId = req.query.grow_id || 1;
+    db.get(
+        "SELECT * FROM environment_logs WHERE grow_id = ? ORDER BY timestamp DESC LIMIT 1",
+        [growId],
+        (err, row) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(row || { temperature: 0, humidity: 0, soil_moisture: 0 });
+        }
+    );
+});
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

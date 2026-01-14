@@ -56,14 +56,28 @@ db.serialize(() => {
         FOREIGN KEY(grow_id) REFERENCES grows(id)
     )`);
 
+    // Environment Logs (Temp, Humidity, Soil)
+    db.run(`CREATE TABLE IF NOT EXISTS environment_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        grow_id INTEGER,
+        temperature REAL,
+        humidity REAL,
+        soil_moisture INTEGER,
+        timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(grow_id) REFERENCES grows(id)
+    )`);
+
+
+
     // SEEDING: Ensure 2 Fixed Boxes exist (4x2)
     db.get("SELECT count(*) as count FROM grows", (err, row) => {
         if (err) console.error(err);
         else if (row.count === 0) {
             console.log("Seeding Database with 2 Fixed Boxes...");
-            const stmt = db.prepare("INSERT INTO grows (name, width, length) VALUES (?, ?, ?)");
-            stmt.run("Бокс 1", 4, 2);
-            stmt.run("Бокс 2", 4, 2);
+            const stmt = db.prepare("INSERT INTO grows (user_id, name, dimensions, type, start_date) VALUES (?, ?, ?, ?, ?)");
+            const now = new Date().toISOString();
+            stmt.run(1, "Бокс 1", "4x2", "indoor", now);
+            stmt.run(1, "Бокс 2", "4x2", "indoor", now);
             stmt.finalize();
             console.log("Seeding Complete.");
         }

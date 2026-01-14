@@ -6,51 +6,74 @@ import { LayoutDashboard, Grid, Sparkles, Droplets, Thermometer, Calendar, Calcu
 import './index.css'
 
 // Widget Dashboard Component
-const Dashboard = () => (
-    <div style={{ padding: '20px', paddingBottom: '100px', animation: 'fadeIn 0.4s' }}>
-        <h1 className="title-large">Обзор</h1>
+const Dashboard = () => {
+    const [data, setData] = useState({ temperature: '--', humidity: '--' });
 
-        {/* Main Stats Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-            <div className="glass-panel" style={{ padding: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <Thermometer color="#f87171" size={24} />
-                    <span className="text-secondary">Темп.</span>
+    useEffect(() => {
+        const loadData = () => {
+            fetch('/api/sensors/latest')
+                .then(res => res.json())
+                .then(d => {
+                    if (d && (d.temperature !== undefined || d.humidity !== undefined)) {
+                        setData({
+                            temperature: d.temperature !== undefined ? Math.round(d.temperature) : '--',
+                            humidity: d.humidity !== undefined ? Math.round(d.humidity) : '--'
+                        });
+                    }
+                })
+                .catch(err => console.error("Failed to fetch sensors", err));
+        };
+        loadData();
+        const timer = setInterval(loadData, 5000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div style={{ padding: '20px', paddingBottom: '100px', animation: 'fadeIn 0.4s' }}>
+            <h1 className="title-large">Обзор</h1>
+
+            {/* Main Stats Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                <div className="glass-panel" style={{ padding: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <Thermometer color="#f87171" size={24} />
+                        <span className="text-secondary">Темп.</span>
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{data.temperature}°C</div>
                 </div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold' }}>24°C</div>
-            </div>
-            <div className="glass-panel" style={{ padding: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <Droplets color="#60a5fa" size={24} />
-                    <span className="text-secondary">Влажн.</span>
+                <div className="glass-panel" style={{ padding: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <Droplets color="#60a5fa" size={24} />
+                        <span className="text-secondary">Влажн.</span>
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{data.humidity}%</div>
                 </div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold' }}>58%</div>
             </div>
-        </div>
 
-        {/* Status Widget */}
-        <div className="glass-panel" style={{ padding: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ background: 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)', width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)' }}>
-                <Calendar color="white" size={28} />
+            {/* Status Widget */}
+            <div className="glass-panel" style={{ padding: '20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div style={{ background: 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)', width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)' }}>
+                    <Calendar color="white" size={28} />
+                </div>
+                <div>
+                    <div className="text-secondary" style={{ fontSize: '13px' }}>Сегодня</div>
+                    <div style={{ fontSize: '18px', fontWeight: '600' }}>Полив "Gorilla Glue"</div>
+                </div>
             </div>
-            <div>
-                <div className="text-secondary" style={{ fontSize: '13px' }}>Сегодня</div>
-                <div style={{ fontSize: '18px', fontWeight: '600' }}>Полив "Gorilla Glue"</div>
-            </div>
-        </div>
 
-        {/* Quick Tips Widget */}
-        <div className="glass-panel" style={{ padding: '20px', background: 'rgba(30, 41, 59, 0.4)' }}>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={16} color="#fbbf24" />
-                <span>Совет дня</span>
-            </h3>
-            <p style={{ fontSize: '14px', lineHeight: '1.5', color: '#cbd5e1', margin: 0 }}>
-                Для лучшей аэрации корней используйте тканевые горшки (Smart Pot). Это предотвратит "закручивание" корней.
-            </p>
+            {/* Quick Tips Widget */}
+            <div className="glass-panel" style={{ padding: '20px', background: 'rgba(30, 41, 59, 0.4)' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} color="#fbbf24" />
+                    <span>Совет дня</span>
+                </h3>
+                <p style={{ fontSize: '14px', lineHeight: '1.5', color: '#cbd5e1', margin: 0 }}>
+                    Для лучшей аэрации корней используйте тканевые горшки (Smart Pot). Это предотвратит "закручивание" корней.
+                </p>
+            </div>
         </div>
-    </div>
-)
+    );
+};
 
 function App() {
     const [activeTab, setActiveTab] = useState('dashboard')
