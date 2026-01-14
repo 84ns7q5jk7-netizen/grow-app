@@ -16,7 +16,7 @@ const Dashboard = () => {
                 .then(d => {
                     if (d && (d.temperature !== undefined || d.humidity !== undefined)) {
                         setData({
-                            temperature: d.temperature !== undefined ? Math.round(d.temperature) : '--',
+                            temperature: d.temperature !== undefined ? Number(d.temperature).toFixed(1) : '--',
                             humidity: d.humidity !== undefined ? Math.round(d.humidity) : '--'
                         });
                     }
