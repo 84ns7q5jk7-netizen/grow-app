@@ -61,6 +61,19 @@ app.post('/api/grows', (req, res) => {
     );
 });
 
+// Update grow details (dimensions, name, etc)
+app.put('/api/grows/:id', (req, res) => {
+    const { name, type, dimensions } = req.body;
+    db.run(
+        "UPDATE grows SET name = COALESCE(?, name), type = COALESCE(?, type), dimensions = COALESCE(?, dimensions) WHERE id = ?",
+        [name, type, dimensions, req.params.id],
+        function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, changes: this.changes });
+        }
+    );
+});
+
 // Get plants for a specific grow
 app.get('/api/plants/:growId', (req, res) => {
     db.all("SELECT * FROM plants WHERE grow_id = ?", [req.params.growId], (err, rows) => {

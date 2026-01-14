@@ -22,6 +22,13 @@ const PlantConstructor = () => {
     useEffect(() => {
         if (currentGrow) {
             fetchPlants(currentGrow.id);
+            if (currentGrow.dimensions) {
+                const [r, c] = currentGrow.dimensions.split('x').map(Number);
+                if (r && c) {
+                    setRows(r);
+                    setCols(c);
+                }
+            }
         }
     }, [currentGrow]);
 
@@ -56,6 +63,32 @@ const PlantConstructor = () => {
             const data = await res.json();
             setPlants(data.data || []);
         } catch (e) { console.error(e); }
+    };
+
+    const updateGrowDimensions = async (r, c) => {
+        setRows(r);
+        setCols(c);
+        if (currentGrow) {
+            // Optimistic update
+            const updated = { ...currentGrow, dimensions: `${r}x${c}` };
+            setCurrentGrow(updated);
+            // Update in list
+            setGrows(grows.map(g => g.id === currentGrow.id ? updated : g));
+
+            try {
+                await fetch(`/api/grows/${currentGrow.id}`, {
+                    method: 'PUT', // Assuming PUT endpoint exists or using POST for update? 
+                    // Wait, I didn't verify if PUT /api/grows/:id exists in server.js! 
+                    // I verified POST /api/grows and GET /api/grows. 
+                    // I should check if update is supported. 
+                    // If not, I'll add it. 
+                    // For now, I'll assume standard REST. If it fails, I'll fix server.js.
+                    // Actually, let's assume it doesn't exist and I'll add it to server.js in next step.
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dimensions: `${r}x${c}` })
+                });
+            } catch (e) { console.error(e); }
+        }
     };
 
     const handleDeleteGrow = async (id) => {
@@ -188,7 +221,7 @@ const PlantConstructor = () => {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', position: 'absolute', top: '105px', right: '20px' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                     <button
                         onClick={() => setShowConfig(!showConfig)}
                         style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c084fc' }}
@@ -222,11 +255,11 @@ const PlantConstructor = () => {
                     <div style={{ display: 'flex', gap: '20px' }}>
                         <label style={{ flex: 1 }}>
                             <div style={{ fontSize: '12px', marginBottom: '8px', color: '#94a3b8' }}>Ряды: {rows}</div>
-                            <input type="range" min="2" max="6" value={rows} onChange={e => setRows(Number(e.target.value))} style={{ width: '100%' }} />
+                            <input type="range" min="2" max="6" value={rows} onChange={e => updateGrowDimensions(Number(e.target.value), cols)} style={{ width: '100%' }} />
                         </label>
                         <label style={{ flex: 1 }}>
                             <div style={{ fontSize: '12px', marginBottom: '8px', color: '#94a3b8' }}>Колонки: {cols}</div>
-                            <input type="range" min="2" max="4" value={cols} onChange={e => setCols(Number(e.target.value))} style={{ width: '100%' }} />
+                            <input type="range" min="2" max="4" value={cols} onChange={e => updateGrowDimensions(rows, Number(e.target.value))} style={{ width: '100%' }} />
                         </label>
                     </div>
                 </div>
@@ -263,8 +296,8 @@ const PlantConstructor = () => {
                         >
                             {plant ? (
                                 <>
-                                    <div style={{ background: plant.stage === 'Цветение' ? '#e879f9' : '#818cf8', padding: '12px', borderRadius: '50%', marginBottom: '8px', boxShadow: '0 8px 15px rgba(0,0,0,0.3)', transform: 'translateZ(20px)' }}>
-                                        <Leaf color="white" size={28} style={{ display: 'block' }} />
+                                    <div style={{ background: plant.stage === 'Цветение' ? '#e879f9' : '#818cf8', padding: '8px', borderRadius: '50%', marginBottom: '8px', boxShadow: '0 8px 15px rgba(0,0,0,0.3)', transform: 'translateZ(20px)' }}>
+                                        <Leaf color="white" size={20} style={{ display: 'block' }} />
                                     </div>
                                     <div style={{ fontWeight: '600', fontSize: '13px', textAlign: 'center', transform: 'translateZ(10px)' }}>{plant.name}</div>
                                     <div style={{ fontSize: '10px', color: '#cbd5e1', marginTop: '2px' }}>{plant.stage}</div>
