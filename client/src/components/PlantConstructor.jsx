@@ -18,17 +18,26 @@ const PlantConstructor = () => {
         fetchGrows();
     }, []);
 
-    // When current grow changes, fetch its plants
+    // When current grow changes, fetch its plants, update grid, and save to localStorage
     useEffect(() => {
         if (currentGrow) {
+            localStorage.setItem('lastGrowId', currentGrow.id); // Save selection
             fetchPlants(currentGrow.id);
+
+            // Default dimensions
+            let r = 4;
+            let c = 3;
+
             if (currentGrow.dimensions) {
-                const [r, c] = currentGrow.dimensions.split('x').map(Number);
-                if (r && c) {
-                    setRows(r);
-                    setCols(c);
+                const [dimR, dimC] = currentGrow.dimensions.split('x').map(Number);
+                if (dimR && dimC) {
+                    r = dimR;
+                    c = dimC;
                 }
             }
+
+            setRows(r);
+            setCols(c);
         }
     }, [currentGrow]);
 
@@ -38,12 +47,17 @@ const PlantConstructor = () => {
             let data = await res.json();
             // Ensure at least 1 grow
             if (data.data.length === 0) {
-                const newGrow = await createGrow('Мой Гроубокс');
+                const newGrow = await createGrow('My Growbox');
                 data.data = [newGrow];
             }
             setGrows(data.data);
-            // Select first one if none selected
-            if (!currentGrow) setCurrentGrow(data.data[0]);
+
+            // Select first one if none selected, or restore from localStorage
+            if (!currentGrow) {
+                const savedId = localStorage.getItem('lastGrowId');
+                const savedGrow = data.data.find(g => g.id == savedId);
+                setCurrentGrow(savedGrow || data.data[0]);
+            }
         } catch (e) { console.error(e); }
     };
 
@@ -168,7 +182,7 @@ const PlantConstructor = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div>
                     <h1 className="title-large" style={{ marginBottom: '20px', fontSize: '42px', fontWeight: '800' }}>
-                        {currentGrow ? 'Мой Гроубокс' : 'Мой Сад'}
+                        {currentGrow ? 'My Growbox' : 'My Garden'}
                     </h1>
 
                     <div style={{
@@ -195,7 +209,7 @@ const PlantConstructor = () => {
                                     boxShadow: currentGrow?.id === g.id ? '0 4px 15px rgba(129, 140, 248, 0.4)' : 'none'
                                 }}
                             >
-                                {g.name === 'Мой Гроубокс' ? 'Мой Гроубокс' : g.name}
+                                {g.name === 'My Growbox' ? 'My Growbox' : g.name}
                             </button>
                         ))}
 
@@ -311,7 +325,7 @@ const PlantConstructor = () => {
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '30px', color: '#64748b', fontSize: '13px' }}>
-                {currentGrow ? `Бокс: ${currentGrow.name === 'Мой Гроубокс' ? 'Мой Гроубокс' : currentGrow.name}` : 'Загрузка...'}
+                {currentGrow ? `Box: ${currentGrow.name === 'My Growbox' ? 'My Growbox' : currentGrow.name}` : 'Loading...'}
             </div>
 
             {selectedPlant && (

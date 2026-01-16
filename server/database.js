@@ -67,6 +67,16 @@ db.serialize(() => {
         FOREIGN KEY(grow_id) REFERENCES grows(id)
     )`);
 
+    // Access Logs (Admin Panel)
+    db.run(`CREATE TABLE IF NOT EXISTS access_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip TEXT,
+        user_agent TEXT,
+        path TEXT,
+        method TEXT,
+        timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+    )`);
+
 
 
     // SEEDING: Ensure 2 Fixed Boxes exist (4x2)

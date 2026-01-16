@@ -33,9 +33,32 @@ if (token) {
 app.use(cors());
 app.use(express.json());
 
+// Request Logging Middleware (Admin Panel)
+app.use((req, res, next) => {
+    // Log only page loads or relevant API calls, skip static assets to avoid spam
+    if (!req.path.includes('.') && !req.path.startsWith('/api/sensors')) {
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        const userAgent = req.get('User-Agent');
+
+        db.run(
+            "INSERT INTO access_logs (ip, user_agent, path, method, timestamp) VALUES (?, ?, ?, ?, ?)",
+            [ip, userAgent, req.path, req.method, new Date().toISOString()],
+            (err) => {
+                if (err) console.error("Error logging access:", err);
+            }
+        );
+    }
+    next();
+});
+
 // Serve static files from React app (for production simulation)
 // In dev, we use Vite proxy
 app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// Admin Panel Access Route
+app.get('/admin-panel.php', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
 
 // --- API Endpoints ---
 
@@ -215,6 +238,29 @@ app.get('/api/sensors/latest', (req, res) => {
             res.json(row || { temperature: 0, humidity: 0, soil_moisture: 0 });
         }
     );
+});
+
+// --- Admin Panel API ---
+
+// Get Access Logs
+app.get('/api/admin/logs', (req, res) => {
+    db.all("SELECT * FROM access_logs ORDER BY timestamp DESC LIMIT 50", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ data: rows });
+    });
+});
+
+// Get System Stats
+app.get('/api/admin/stats', (req, res) => {
+    const uptime = process.uptime();
+    db.get("SELECT COUNT(*) as count FROM access_logs", (err, row) => {
+        const logCount = row ? row.count : 0;
+        res.json({
+            uptime,
+            logCount,
+            serverTime: new Date().toISOString()
+        });
+    });
 });
 
 // Start Server
