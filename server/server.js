@@ -208,26 +208,42 @@ app.delete('/api/grows/:id', (req, res) => {
 
 // Receive sensor data
 app.post('/api/sensors', (req, res) => {
-    // Default grow_id to 1 if not provided (temp hack for single box)
-    const { grow_id = 1, temperature, humidity, soil_moisture, soil } = req.body;
+    const { grow_id = 1, temperature, humidity, soil_moisture, soil, temperature2, humidity2 } = req.body;
     const finalSoil = soil_moisture || soil;
 
-    console.log(`[Sensor Data] Temp: ${temperature}, Hum: ${humidity}, Soil: ${finalSoil}`);
+    console.log(`[Sensor Data] Box 1 - Temp: ${temperature}, Hum: ${humidity}, Soil: ${finalSoil}`);
+    if (temperature2 !== undefined) {
+        console.log(`[Sensor Data] Box 2 - Temp: ${temperature2}, Hum: ${humidity2}`);
+    }
 
-    db.run(
-        "INSERT INTO environment_logs (grow_id, temperature, humidity, soil_moisture, timestamp) VALUES (?, ?, ?, ?, ?)",
-        [grow_id, temperature, humidity, finalSoil, new Date().toISOString()],
-        function (err) {
-            if (err) {
-                console.error("Error saving sensor data:", err.message);
-                return res.status(500).json({ error: err.message });
+    const timestamp = new Date().toISOString();
+
+    db.serialize(() => {
+        // Insert Box 1 Data
+        db.run(
+            "INSERT INTO environment_logs (grow_id, temperature, humidity, soil_moisture, timestamp) VALUES (?, ?, ?, ?, ?)",
+            [grow_id, temperature, humidity, finalSoil, timestamp],
+            (err) => {
+                if (err) console.error("Error saving Box 1 data:", err.message);
             }
-            res.json({ success: true, id: this.lastID });
+        );
+
+        // Insert Box 2 Data (if present)
+        if (temperature2 !== undefined || humidity2 !== undefined) {
+            db.run(
+                "INSERT INTO environment_logs (grow_id, temperature, humidity, soil_moisture, timestamp) VALUES (?, ?, ?, ?, ?)",
+                [2, temperature2, humidity2, 0, timestamp], // Hardcoded grow_id 2 for 2nd sensor
+                (err) => {
+                    if (err) console.error("Error saving Box 2 data:", err.message);
+                }
+            );
         }
-    );
+    });
+
+    res.json({ success: true });
 });
 
-// Get latest sensor data
+// Get latest sensor data (Single Box Legacy)
 app.get('/api/sensors/latest', (req, res) => {
     const growId = req.query.grow_id || 1;
     db.get(
@@ -238,6 +254,26 @@ app.get('/api/sensors/latest', (req, res) => {
             res.json(row || { temperature: 0, humidity: 0, soil_moisture: 0 });
         }
     );
+});
+
+// Get Latest Dashboard Data (All Active Boxes)
+app.get('/api/sensors/dashboard', (req, res) => {
+    // Get latest log for EACH grow_id found in environment_logs
+    // (This query gets the row with max timestamp for each distinct grow_id)
+    const query = `
+        SELECT e.* 
+        FROM environment_logs e
+        INNER JOIN (
+            SELECT grow_id, MAX(timestamp) as max_ts
+            FROM environment_logs
+            GROUP BY grow_id
+        ) latest ON e.grow_id = latest.grow_id AND e.timestamp = latest.max_ts
+    `;
+
+    db.all(query, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ data: rows });
+    });
 });
 
 // --- Admin Panel API ---

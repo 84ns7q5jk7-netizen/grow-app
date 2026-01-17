@@ -8,57 +8,55 @@ import './index.css'
 
 // Widget Dashboard Component
 const Dashboard = ({ onOpenAdmin }) => {
-    const [data, setData] = useState({ temperature: '--', humidity: '--' });
-    const [isConnected, setIsConnected] = useState(false);
+    const [sensors, setSensors] = useState([]);
     const [showAlert, setShowAlert] = useState(null);
 
     useEffect(() => {
         const loadData = () => {
-            fetch('/api/sensors/latest')
+            fetch('/api/sensors/dashboard')
                 .then(res => res.json())
-                .then(d => {
+                .then(response => {
+                    const rows = response.data || [];
                     const now = new Date();
-                    const dataTime = d.timestamp ? new Date(d.timestamp) : new Date(0);
-                    const diffSeconds = (now - dataTime) / 1000;
 
-                    // Connected if data is younger than 60 seconds
-                    const connected = diffSeconds < 60;
-                    setIsConnected(connected);
+                    // Process each sensor row
+                    const processed = rows.map(row => {
+                        const dataTime = row.timestamp ? new Date(row.timestamp) : new Date(0);
+                        const diffSeconds = (now - dataTime) / 1000;
+                        const isConnected = diffSeconds < 150; // 150s timeout (2.5 mins)
 
-                    if (connected) {
-                        // Real Data
-                        const temp = d.temperature !== undefined ? Number(d.temperature) : 0;
-                        setData({
-                            temperature: temp.toFixed(1),
-                            humidity: d.humidity !== undefined ? Math.round(d.humidity) : '--'
-                        });
-                        checkAlerts(temp);
+                        return {
+                            id: row.grow_id,
+                            name: `Box #${row.grow_id}`, // Could fetch name from 'grows' table later
+                            temperature: row.temperature !== undefined ? Number(row.temperature).toFixed(1) : '--',
+                            humidity: row.humidity !== undefined ? Math.round(row.humidity) : '--',
+                            isConnected
+                        };
+                    });
+
+                    // If no data, show at least one "Empty/Offline" placeholder
+                    if (processed.length === 0) {
+                        setSensors([{ id: 1, name: 'Main Box', temperature: '--', humidity: '--', isConnected: false }]);
                     } else {
-                        // Demo/Disconnected Mode - Random "Live" Data
-                        // Temp: 21.0 - 25.0, Hum: 45 - 55
-                        const randomTemp = 21 + Math.random() * 4;
-                        const randomHum = 45 + Math.random() * 10;
-                        setData({
-                            temperature: randomTemp.toFixed(1),
-                            humidity: Math.round(randomHum)
-                        });
-                        checkAlerts(randomTemp);
+                        setSensors(processed);
+                    }
+
+                    // Check alerts (simple logic: if ANY box is critical)
+                    const critical = processed.find(p => p.isConnected && (p.temperature < 15 || p.temperature > 28));
+                    if (critical) {
+                        if (critical.temperature < 15) setShowAlert('low_temp');
+                        else setShowAlert('high_temp');
+                    } else {
+                        setShowAlert(null);
                     }
                 })
                 .catch(err => {
                     console.error("Failed to fetch sensors", err);
-                    setIsConnected(false);
                 });
         };
 
-        const checkAlerts = (temp) => {
-            if (temp < 15) setShowAlert('low_temp');
-            else if (temp > 25) setShowAlert('high_temp');
-            else setShowAlert(null);
-        };
-
         loadData();
-        const timer = setInterval(loadData, 3000); // 3 seconds for "live" feel
+        const timer = setInterval(loadData, 5000); // 5 seconds polling
         return () => clearInterval(timer);
     }, []);
 
@@ -87,46 +85,56 @@ const Dashboard = ({ onOpenAdmin }) => {
                     <div>
                         <div style={{ fontWeight: 'bold', color: '#f87171' }}>Внимание!</div>
                         <div style={{ fontSize: '13px', color: '#fca5a5' }}>
-                            {showAlert === 'low_temp' ? 'Температура слишком низкая (< 15°C)' : 'Температура слишком высокая (> 25°C)'}
+                            {showAlert === 'low_temp' ? 'Температура слишком низкая (< 15°C)' : 'Температура слишком высокая (> 28°C)'}
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Main Stats Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-                <div className="glass-panel" style={{ padding: '15px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Thermometer color="#f87171" size={24} />
+            {/* Render Sensor Cards Loop */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+                {sensors.map(sensor => (
+                    <div key={sensor.id} className="glass-panel" style={{ padding: '15px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
+                            <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '600' }}>{sensor.name}</span>
                             <div style={{
                                 width: '8px',
                                 height: '8px',
                                 borderRadius: '50%',
-                                background: isConnected ? '#4ade80' : '#ef4444',
-                                boxShadow: isConnected ? '0 0 8px #4ade80' : 'none'
+                                background: sensor.isConnected ? '#4ade80' : '#ef4444',
+                                boxShadow: sensor.isConnected ? '0 0 8px #4ade80' : 'none'
                             }} />
                         </div>
-                        <span className="text-secondary">Темп.</span>
-                    </div>
-                    <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{data.temperature}°C</div>
-                </div>
-                <div className="glass-panel" style={{ padding: '15px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Droplets color="#60a5fa" size={24} />
-                            <div style={{
-                                width: '8px',
-                                height: '8px',
-                                borderRadius: '50%',
-                                background: isConnected ? '#4ade80' : '#ef4444',
-                                boxShadow: isConnected ? '0 0 8px #4ade80' : 'none'
-                            }} />
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                            {/* Temp */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ background: 'rgba(248, 113, 113, 0.15)', padding: '10px', borderRadius: '12px' }}>
+                                    <Thermometer color="#f87171" size={24} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>Температура</div>
+                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: sensor.isConnected ? 'white' : '#64748b' }}>
+                                        {sensor.temperature}°C
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Humidity */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ background: 'rgba(96, 165, 250, 0.15)', padding: '10px', borderRadius: '12px' }}>
+                                    <Droplets color="#60a5fa" size={24} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>Влажность</div>
+                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: sensor.isConnected ? 'white' : '#64748b' }}>
+                                        {sensor.humidity}%
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <span className="text-secondary">Влажн.</span>
                     </div>
-                    <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{data.humidity}%</div>
-                </div>
+                ))}
             </div>
 
             {/* Quick Tips Widget */}
