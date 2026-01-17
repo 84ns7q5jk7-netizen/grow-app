@@ -375,7 +375,24 @@ app.post('/api/chat', async (req, res) => {
 
         if (data.error) {
             console.error("Gemini API Error:", data.error);
-            return res.json({ reply: `Ошибка Google API: ${data.error.message}` });
+
+            // Custom Diagnostic: List available models
+            try {
+                const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+                const listResp = await fetch(listUrl);
+                const listData = await listResp.json();
+
+                const models = listData.models
+                    ? listData.models.map(m => m.name.replace('models/', '')).join(', ')
+                    : "Нет моделей (ошибка списка)";
+
+                return res.json({
+                    reply: `Ошибка: ${data.error.message}\n\nдоступные модели:\n${models}`
+                });
+
+            } catch (listErr) {
+                return res.json({ reply: `Ошибка Google API: ${data.error.message} (Diag failed)` });
+            }
         }
 
         const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || `Ответ странный: ${JSON.stringify(data)}`;
@@ -383,28 +400,7 @@ app.post('/api/chat', async (req, res) => {
 
     } catch (e) {
         console.error("Gemini Error:", e);
-
-        // Custom Diagnostic: List available models
-        try {
-            const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-            const listResp = await fetch(listUrl);
-            const listData = await listResp.json();
-
-            if (listData.error) {
-                return res.json({ reply: `Ошибка Gemini: ${e.message}. (Список моделей недоступен: ${listData.error.message})` });
-            }
-
-            const models = listData.models
-                ? listData.models.map(m => m.name.replace('models/', '')).join(', ')
-                : "Нет моделей";
-
-            return res.json({
-                reply: `Ошибка: Модель 'gemini-pro' не найдена. \n\nДоступные модели для вашего ключа:\n${models}`
-            });
-
-        } catch (listErr) {
-            res.status(500).json({ error: "Failed to connect to Gemini and diagnostics failed." });
-        }
+        res.status(500).json({ error: "Failed to connect to Gemini" });
     }
 });
 
