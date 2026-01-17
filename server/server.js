@@ -312,6 +312,27 @@ app.get('/api/admin/stats', (req, res) => {
     });
 });
 
+// ----------------------------------------------------------------------
+// NEW: Get Sensor History (for Charts)
+// ----------------------------------------------------------------------
+app.get('/api/sensors/history', (req, res) => {
+    const hours = req.query.hours || 24;
+    // SQLite datetime modifier format: '-24 hours'
+    db.all(
+        `SELECT grow_id, temperature, humidity, timestamp FROM environment_logs 
+         WHERE timestamp > datetime('now', '-' || ? || ' hours') 
+         ORDER BY timestamp ASC`,
+        [hours],
+        (err, rows) => {
+            if (err) {
+                console.error("Error fetching history:", err.message);
+                return res.status(500).json({ error: err.message });
+            }
+            res.json(rows);
+        }
+    );
+});
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

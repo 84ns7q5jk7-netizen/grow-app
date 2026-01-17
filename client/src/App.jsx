@@ -4,6 +4,7 @@ import AIAssistant from './components/AIAssistant'
 import DripCalculator from './components/DripCalculator'
 import AdminPanel from './components/AdminPanel'
 import TipsWidget from './components/TipsWidget'
+import SensorChart from './components/SensorChart'
 import { LayoutDashboard, Grid, Sparkles, Droplets, Thermometer, AlertTriangle, Shield, Calculator } from 'lucide-react'
 import './index.css'
 
@@ -137,6 +138,9 @@ const Dashboard = ({ onOpenAdmin }) => {
                     </div>
                 ))}
             </div>
+
+            {/* Charts */}
+            <SensorChart />
 
             {/* Tips Widget */}
             <TipsWidget />
