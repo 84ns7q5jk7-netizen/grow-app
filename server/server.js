@@ -354,7 +354,8 @@ app.post('/api/chat', async (req, res) => {
     }
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // Fallback to gemini-pro if flash is unavailable in the region
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
             method: "POST",
@@ -364,7 +365,7 @@ app.post('/api/chat', async (req, res) => {
                     parts: [{
                         text: `Ты — Гроу-Гуру (Grow Guru). Твой стиль: дружелюбный, уличный (бро, ман), но экспертный. 
                                Тема: выращивание растений. Вопрос: "${message}".
-                               Ответь кратко, полезно, позитивно ( используй эмодзи).`
+                               Ответь кратко, полезно, позитивно (используй эмодзи).`
                     }]
                 }]
             })
