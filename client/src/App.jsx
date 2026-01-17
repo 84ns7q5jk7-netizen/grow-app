@@ -3,6 +3,7 @@ import PlantConstructor from './components/PlantConstructor'
 import AIAssistant from './components/AIAssistant'
 import DripCalculator from './components/DripCalculator'
 import AdminPanel from './components/AdminPanel'
+import TipsWidget from './components/TipsWidget'
 import { LayoutDashboard, Grid, Sparkles, Droplets, Thermometer, AlertTriangle, Shield, Calculator } from 'lucide-react'
 import './index.css'
 
@@ -137,16 +138,8 @@ const Dashboard = ({ onOpenAdmin }) => {
                 ))}
             </div>
 
-            {/* Quick Tips Widget */}
-            <div className="glass-panel" style={{ padding: '20px', background: 'rgba(30, 41, 59, 0.4)' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Sparkles size={16} color="#fbbf24" />
-                    <span>Совет дня</span>
-                </h3>
-                <p style={{ fontSize: '14px', lineHeight: '1.5', color: '#cbd5e1', margin: 0 }}>
-                    Для лучшей аэрации корней используйте тканевые горшки (Smart Pot). Это предотвратит "закручивание" корней.
-                </p>
-            </div>
+            {/* Tips Widget */}
+            <TipsWidget />
         </div>
     );
 };
