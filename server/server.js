@@ -360,7 +360,13 @@ app.post('/api/chat', async (req, res) => {
         });
 
         const data = await response.json();
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Gemini думает о вечном... Попробуй еще раз.";
+
+        if (data.error) {
+            console.error("Gemini API Error:", data.error);
+            return res.json({ reply: `Ошибка Google API: ${data.error.message}` });
+        }
+
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || `Ответ странный: ${JSON.stringify(data)}`;
         res.json({ reply });
 
     } catch (e) {
