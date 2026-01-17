@@ -119,16 +119,24 @@ app.post('/api/plants', (req, res) => {
 });
 
 // --- Database Migration Helper ---
-const addColumns = () => {
+const ensureSchema = () => {
     db.run("ALTER TABLE plants ADD COLUMN substrate TEXT", (err) => {
         if (!err) console.log("Added 'substrate' column");
     });
     db.run("ALTER TABLE plants ADD COLUMN pot_volume TEXT", (err) => {
         if (!err) console.log("Added 'pot_volume' column");
     });
+    // Ensure Box 2 exists for dual sensor
+    db.get("SELECT count(*) as count FROM grows", (err, row) => {
+        if (!err && row && row.count < 2) {
+            console.log("Auto-creating Box 2...");
+            db.run("INSERT INTO grows (user_id, name, type, dimensions, start_date) VALUES (?, ?, ?, ?, ?)",
+                [1, "Box 2", "indoor", "4x2", new Date().toISOString()]);
+        }
+    });
 };
 // Try to add columns on startup (ignore error if they exist)
-addColumns();
+ensureSchema();
 
 // Update plant metadata (Phase 3 + 5)
 app.put('/api/plants/:id', (req, res) => {
@@ -208,6 +216,11 @@ app.delete('/api/grows/:id', (req, res) => {
 
 // Receive sensor data
 app.post('/api/sensors', (req, res) => {
+    // Detailed Debug Logging
+    console.log('--- Incoming Sensor Data ---');
+    console.log('Headers:', JSON.stringify(req.headers));
+    console.log('Body:', JSON.stringify(req.body));
+
     const { grow_id = 1, temperature, humidity, soil_moisture, soil, temperature2, humidity2 } = req.body;
     const finalSoil = soil_moisture || soil;
 
