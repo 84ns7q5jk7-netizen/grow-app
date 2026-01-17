@@ -222,7 +222,7 @@ app.post('/api/sensors', (req, res) => {
     console.log('Body:', JSON.stringify(req.body));
 
     const { grow_id = 1, temperature, humidity, soil_moisture, soil, temperature2, humidity2 } = req.body;
-    const finalSoil = soil_moisture || soil;
+    const finalSoil = soil_moisture || soil || 0;
 
     console.log(`[Sensor Data] Box 1 - Temp: ${temperature}, Hum: ${humidity}, Soil: ${finalSoil}`);
     if (temperature2 !== undefined) {
@@ -331,6 +331,48 @@ app.get('/api/sensors/history', (req, res) => {
             res.json(rows);
         }
     );
+});
+
+// ----------------------------------------------------------------------
+// NEW: AI Chat (Grok)
+// ----------------------------------------------------------------------
+app.post('/api/chat', async (req, res) => {
+    const { message } = req.body;
+    const apiKey = process.env.XAI_API_KEY; // Must be set in Environment Variables
+
+    if (!apiKey) {
+        // Fallback if no key provided
+        return res.json({ reply: "⚠️ API Key не найден. Пожалуйста, добавьте XAI_API_KEY в настройки Render." });
+    }
+
+    try {
+        const response = await fetch("https://api.x.ai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                messages: [
+                    {
+                        role: "system",
+                        content: "Ты — опытный Гровер-Помощник. Твой стиль: дружелюбный, используешь сленг (бро, ман, джа). Твоя задача: помогать выращивать растения (свет, полив, pH, болезни). Отвечай кратко и по делу."
+                    },
+                    { role: "user", content: message }
+                ],
+                model: "grok-beta",
+                stream: false
+            })
+        });
+
+        const data = await response.json();
+        const reply = data.choices?.[0]?.message?.content || "Ошибка API Grok...";
+        res.json({ reply });
+
+    } catch (e) {
+        console.error("AI Error:", e);
+        res.status(500).json({ error: "Failed to fetch from AI" });
+    }
 });
 
 // Start Server

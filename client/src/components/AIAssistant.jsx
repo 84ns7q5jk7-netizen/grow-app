@@ -39,26 +39,23 @@ const AIAssistant = () => {
         setInput('');
         setIsTyping(true);
 
-        // Simulate "thinking"
-        setTimeout(() => {
-            const lowerInput = userMsg.text.toLowerCase();
-            let answer = GURU_RESPONSES['unknown'];
+        // Call Server API
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input })
+            });
+            const data = await response.json();
 
-            // Simple keyword matching for Guru Logic
-            if (lowerInput.includes('привет') || lowerInput.includes('здарова')) answer = GURU_RESPONSES['привет'];
-            else if (lowerInput.includes('листья') || lowerInput.includes('желт')) answer = GURU_RESPONSES['желтеют'];
-            else if (lowerInput.includes('свет') || lowerInput.includes('лампа') || lowerInput.includes('led')) answer = GURU_RESPONSES['свет'];
-            else if (lowerInput.includes('полив') || lowerInput.includes('вода') || lowerInput.includes('сколько лить')) answer = GURU_RESPONSES['полив'];
-            else if (lowerInput.includes('ph') || lowerInput.includes('пш')) answer = GURU_RESPONSES['пш'];
-            else if (lowerInput.includes('харвест') || lowerInput.includes('рубить') || lowerInput.includes('сбор')) answer = GURU_RESPONSES['харвест'];
-            else if (lowerInput.includes('удобр') || lowerInput.includes('корм')) answer = GURU_RESPONSES['удобрения'];
-            else if (lowerInput.includes('темп')) answer = GURU_RESPONSES['температура'];
-            else if (lowerInput.includes('влажн')) answer = GURU_RESPONSES['влажность'];
-
-            const aiMsg = { id: Date.now() + 1, text: answer, sender: 'ai' };
+            const aiMsg = { id: Date.now() + 1, text: data.reply, sender: 'ai' };
             setMessages(prev => [...prev, aiMsg]);
+        } catch (error) {
+            console.error(error);
+            setMessages(prev => [...prev, { id: Date.now(), text: "Ошибка связи с сервером...", sender: 'ai' }]);
+        } finally {
             setIsTyping(false);
-        }, 1500);
+        }
     };
 
     return (
