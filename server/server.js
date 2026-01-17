@@ -35,7 +35,7 @@ app.use(express.json());
 
 // Request Logging Middleware (Admin Panel)
 app.use((req, res, next) => {
-    // Log only page loads or relevant API calls, skip static assets to avoid spam
+    // Log only page loads or relevant API calls
     if (!req.path.includes('.') && !req.path.startsWith('/api/sensors')) {
         const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
         const userAgent = req.get('User-Agent');
@@ -51,8 +51,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static files from React app (for production simulation)
-// In dev, we use Vite proxy
+// Serve static files from React app
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // Admin Panel Access Route
@@ -64,7 +63,6 @@ app.get('/admin-panel.php', (req, res) => {
 
 // Get all grows for a user
 app.get('/api/grows', (req, res) => {
-    // Mock user_id 1 for now
     db.all("SELECT * FROM grows WHERE user_id = 1", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ data: rows });
@@ -84,7 +82,7 @@ app.post('/api/grows', (req, res) => {
     );
 });
 
-// Update grow details (dimensions, name, etc)
+// Update grow details
 app.put('/api/grows/:id', (req, res) => {
     const { name, type, dimensions } = req.body;
     db.run(
@@ -105,7 +103,7 @@ app.get('/api/plants/:growId', (req, res) => {
     });
 });
 
-// Add a plant (Constructor action)
+// Add a plant
 app.post('/api/plants', (req, res) => {
     const { grow_id, name, strain, stage, x, y } = req.body;
     db.run(
@@ -120,12 +118,8 @@ app.post('/api/plants', (req, res) => {
 
 // --- Database Migration Helper ---
 const ensureSchema = () => {
-    db.run("ALTER TABLE plants ADD COLUMN substrate TEXT", (err) => {
-        if (!err) console.log("Added 'substrate' column");
-    });
-    db.run("ALTER TABLE plants ADD COLUMN pot_volume TEXT", (err) => {
-        if (!err) console.log("Added 'pot_volume' column");
-    });
+    db.run("ALTER TABLE plants ADD COLUMN substrate TEXT", (err) => { });
+    db.run("ALTER TABLE plants ADD COLUMN pot_volume TEXT", (err) => { });
     // Ensure Box 2 exists for dual sensor
     db.get("SELECT count(*) as count FROM grows", (err, row) => {
         if (!err && row && row.count < 2) {
@@ -135,10 +129,9 @@ const ensureSchema = () => {
         }
     });
 };
-// Try to add columns on startup (ignore error if they exist)
 ensureSchema();
 
-// Update plant metadata (Phase 3 + 5)
+// Update plant metadata
 app.put('/api/plants/:id', (req, res) => {
     const { name, strain, stage, planted_date, harvest_date, substrate, pot_volume } = req.body;
     db.run(
@@ -168,9 +161,7 @@ app.put('/api/plants/:id/position', (req, res) => {
     });
 });
 
-// --- Notes System ---
-
-// Get notes for a plant
+// Get notes
 app.get('/api/notes/:plantId', (req, res) => {
     db.all(
         "SELECT * FROM logs WHERE plant_id = ? AND activity_type = 'note' ORDER BY timestamp DESC",
@@ -214,13 +205,11 @@ app.delete('/api/grows/:id', (req, res) => {
 
 // Receive sensor data
 app.post('/api/sensors', (req, res) => {
-    // Detailed Debug Logging
     console.log('--- Incoming Sensor Data ---');
-    console.log('Headers:', JSON.stringify(req.headers));
     console.log('Body:', JSON.stringify(req.body));
 
     const { grow_id = 1, temperature, humidity, soil_moisture, soil, temperature2, humidity2 } = req.body;
-    const finalSoil = soil_moisture || soil || 0; // FIX: Fallback to 0
+    const finalSoil = soil_moisture || soil || 0;
 
     console.log(`[Sensor Data] Box 1 - Temp: ${temperature}, Hum: ${humidity}, Soil: ${finalSoil}`);
     if (temperature2 !== undefined) {
@@ -243,7 +232,7 @@ app.post('/api/sensors', (req, res) => {
         if (temperature2 !== undefined || humidity2 !== undefined) {
             db.run(
                 "INSERT INTO environment_logs (grow_id, temperature, humidity, soil_moisture, timestamp) VALUES (?, ?, ?, ?, ?)",
-                [2, temperature2, humidity2, 0, timestamp], // Hardcoded grow_id 2 for 2nd sensor
+                [2, temperature2, humidity2, 0, timestamp],
                 (err) => {
                     if (err) console.error("Error saving Box 2 data:", err.message);
                 }
@@ -261,7 +250,6 @@ app.get('/api/sensors/latest', (req, res) => {
         "SELECT * FROM environment_logs WHERE grow_id = ? ORDER BY timestamp DESC LIMIT 1",
         [growId],
         (err, row) => {
-            if (err) return res.status(500).json({ error: err.message });
             res.json(row || { temperature: 0, humidity: 0, soil_moisture: 0 });
         }
     );
@@ -269,8 +257,6 @@ app.get('/api/sensors/latest', (req, res) => {
 
 // Get Latest Dashboard Data (All Active Boxes)
 app.get('/api/sensors/dashboard', (req, res) => {
-    // Get latest log for EACH grow_id found in environment_logs
-    // (This query gets the row with max timestamp for each distinct grow_id)
     const query = `
         SELECT e.* 
         FROM environment_logs e
@@ -280,7 +266,6 @@ app.get('/api/sensors/dashboard', (req, res) => {
             GROUP BY grow_id
         ) latest ON e.grow_id = latest.grow_id AND e.timestamp = latest.max_ts
     `;
-
     db.all(query, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ data: rows });
@@ -288,8 +273,6 @@ app.get('/api/sensors/dashboard', (req, res) => {
 });
 
 // --- Admin Panel API ---
-
-// Get Access Logs
 app.get('/api/admin/logs', (req, res) => {
     db.all("SELECT * FROM access_logs ORDER BY timestamp DESC LIMIT 50", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -297,110 +280,81 @@ app.get('/api/admin/logs', (req, res) => {
     });
 });
 
-// Get System Stats
 app.get('/api/admin/stats', (req, res) => {
     const uptime = process.uptime();
     db.get("SELECT COUNT(*) as count FROM access_logs", (err, row) => {
         const logCount = row ? row.count : 0;
-        res.json({
-            uptime,
-            logCount,
-            serverTime: new Date().toISOString()
-        });
+        res.json({ uptime, logCount, serverTime: new Date().toISOString() });
     });
 });
 
-// ----------------------------------------------------------------------
-// NEW: Version Check
-// ----------------------------------------------------------------------
+// New Version Check
 app.get('/api/version', (req, res) => {
-    res.json({
-        version: '1.2.0',
-        build: 'Gemini-Fix-Debug',
-        time: new Date().toISOString()
-    });
+    res.json({ version: '1.4.0', build: 'OpenRouter-Integrated', time: new Date().toISOString() });
 });
 
-// ----------------------------------------------------------------------
-// NEW: Get Sensor History (for Charts)
-// ----------------------------------------------------------------------
+// Sensor History
 app.get('/api/sensors/history', (req, res) => {
     const hours = req.query.hours || 24;
-    // SQLite datetime modifier format: '-24 hours'
     db.all(
         `SELECT grow_id, temperature, humidity, timestamp FROM environment_logs 
          WHERE timestamp > datetime('now', '-' || ? || ' hours') 
          ORDER BY timestamp ASC`,
         [hours],
         (err, rows) => {
-            if (err) {
-                console.error("Error fetching history:", err.message);
-                return res.status(500).json({ error: err.message });
-            }
+            if (err) return res.status(500).json({ error: err.message });
             res.json(rows);
         }
     );
 });
 
 // ----------------------------------------------------------------------
-// NEW: AI Chat (Google Gemini)
+// NEW: AI Chat (OpenRouter)
 // ----------------------------------------------------------------------
 app.post('/api/chat', async (req, res) => {
     const { message } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
 
     if (!apiKey) {
-        return res.json({ reply: "⚠️ API Key не найден. Проверьте переменную GEMINI_API_KEY в настройках Render." });
+        return res.json({ reply: "⚠️ API Key не найден. Добавьте переменную OPENROUTER_API_KEY в Render." });
     }
 
     try {
-        // Using 'gemini-pro' (stable text model)
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
-
-        const response = await fetch(url, {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+                "HTTP-Referer": webAppUrl,
+                "X-Title": "Grow App"
+            },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: `Ты — Гроу-Гуру (Grow Guru). Твой стиль: дружелюбный, уличный (бро, ман), но экспертный. 
-                               Тема: выращивание растений. Вопрос: "${message}".
-                               Ответь кратко, полезно, позитивно (используй эмодзи).`
-                    }]
-                }]
+                // Using Free Gemini via OpenRouter
+                model: "google/gemini-2.0-flash-exp:free",
+                messages: [
+                    {
+                        role: "system",
+                        content: "Ты — Гроу-Гуру (Grow Guru). Твой стиль: дружелюбный, уличный (бро, ман), но экспертный. Тема: выращивание растений. Отвечай кратко, полезно, позитивно (используй эмодзи)."
+                    },
+                    { role: "user", content: message }
+                ],
+                stream: false
             })
         });
 
         const data = await response.json();
 
         if (data.error) {
-            console.error("Gemini API Error:", data.error);
-
-            // Custom Diagnostic: List available models
-            try {
-                const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-                const listResp = await fetch(listUrl);
-                const listData = await listResp.json();
-
-                const models = listData.models
-                    ? listData.models.map(m => m.name.replace('models/', '')).join(', ')
-                    : "Нет моделей (ошибка списка)";
-
-                return res.json({
-                    reply: `Ошибка: ${data.error.message}\n\nдоступные модели:\n${models}`
-                });
-
-            } catch (listErr) {
-                return res.json({ reply: `Ошибка Google API: ${data.error.message} (Diag failed)` });
-            }
+            console.error("OpenRouter API Error:", data.error);
+            return res.json({ reply: `Ошибка OpenRouter: ${data.error.message || JSON.stringify(data.error)}` });
         }
 
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || `Ответ странный: ${JSON.stringify(data)}`;
+        const reply = data.choices?.[0]?.message?.content || "OpenRouter молчит... Попробуй позже.";
         res.json({ reply });
 
     } catch (e) {
-        console.error("Gemini Error:", e);
-        res.status(500).json({ error: "Failed to connect to Gemini" });
+        console.error("OpenRouter Error:", e);
+        res.status(500).json({ error: "Failed to connect to OpenRouter" });
     }
 });
 
