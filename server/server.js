@@ -343,47 +343,50 @@ app.get('/api/sensors/history', (req, res) => {
 });
 
 // ----------------------------------------------------------------------
-// NEW: AI Chat (Google Gemini)
+// NEW: AI Chat (Grok - xAI)
 // ----------------------------------------------------------------------
 app.post('/api/chat', async (req, res) => {
     const { message } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Use Env var
+    const apiKey = process.env.XAI_API_KEY;
 
     if (!apiKey) {
-        return res.json({ reply: "⚠️ API Key не найден. Проверьте переменную GEMINI_API_KEY в настройках Render." });
+        return res.json({ reply: "⚠️ API Key не найден. Добавьте переменную XAI_API_KEY в Render." });
     }
 
     try {
-        // Fallback to gemini-pro if flash is unavailable in the region
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
-
-        const response = await fetch(url, {
+        const response = await fetch("https://api.x.ai/v1/chat/completions", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: `Ты — Гроу-Гуру (Grow Guru). Твой стиль: дружелюбный, уличный (бро, ман), но экспертный. 
-                               Тема: выращивание растений. Вопрос: "${message}".
-                               Ответь кратко, полезно, позитивно (используй эмодзи).`
-                    }]
-                }]
+                messages: [
+                    {
+                        role: "system",
+                        content: "Ты — опытный Гровер-Помощник. Твой стиль: дружелюбный, используешь сленг (бро, ман, джа). Твоя задача: помогать выращивать растения (свет, полив, pH, болезни). Отвечай кратко и по делу."
+                    },
+                    { role: "user", content: message }
+                ],
+                model: "grok-beta",
+                stream: false
             })
         });
 
         const data = await response.json();
 
         if (data.error) {
-            console.error("Gemini API Error:", data.error);
-            return res.json({ reply: `Ошибка Google API: ${data.error.message}` });
+            console.error("Grok API Error:", data.error);
+            return res.json({ reply: `Ошибка Grok API: ${data.error.message || JSON.stringify(data.error)}` });
         }
 
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || `Ответ странный: ${JSON.stringify(data)}`;
+        const reply = data.choices?.[0]?.message?.content || "Grok молчит...";
         res.json({ reply });
 
     } catch (e) {
-        console.error("Gemini Error:", e);
-        res.status(500).json({ error: "Failed to connect to Gemini" });
+        console.error("AI Error:", e);
+        res.status(500).json({ error: "Failed to fetch from AI" });
     }
 });
 
