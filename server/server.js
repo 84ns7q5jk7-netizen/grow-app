@@ -311,6 +311,17 @@ app.get('/api/admin/stats', (req, res) => {
 });
 
 // ----------------------------------------------------------------------
+// NEW: Version Check
+// ----------------------------------------------------------------------
+app.get('/api/version', (req, res) => {
+    res.json({
+        version: '1.2.0',
+        build: 'Gemini-Fix-Debug',
+        time: new Date().toISOString()
+    });
+});
+
+// ----------------------------------------------------------------------
 // NEW: Get Sensor History (for Charts)
 // ----------------------------------------------------------------------
 app.get('/api/sensors/history', (req, res) => {
