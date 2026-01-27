@@ -120,6 +120,7 @@ app.post('/api/plants', (req, res) => {
 const ensureSchema = () => {
     db.run("ALTER TABLE plants ADD COLUMN substrate TEXT", (err) => { });
     db.run("ALTER TABLE plants ADD COLUMN pot_volume TEXT", (err) => { });
+    db.run("ALTER TABLE logs ADD COLUMN title TEXT", (err) => { });
     // Ensure Box 2 exists for dual sensor
     db.get("SELECT count(*) as count FROM grows", (err, row) => {
         if (!err && row && row.count < 2) {
@@ -186,6 +187,27 @@ app.post('/api/notes', (req, res) => {
     );
 });
 
+// Get Journal Entries
+app.get('/api/journal', (req, res) => {
+    db.all("SELECT * FROM logs ORDER BY timestamp DESC", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ data: rows });
+    });
+});
+
+// Add Journal Entry
+app.post('/api/journal', (req, res) => {
+    const { grow_id, title, content, date } = req.body;
+    db.run(
+        "INSERT INTO logs (grow_id, activity_type, title, description, timestamp) VALUES (?, 'journal', ?, ?, ?)",
+        [grow_id, title, content, date || new Date().toISOString()],
+        function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ id: this.lastID });
+        }
+    );
+});
+
 // Delete a grow
 app.delete('/api/grows/:id', (req, res) => {
     const { id } = req.params;
@@ -208,10 +230,10 @@ app.post('/api/sensors', (req, res) => {
     console.log('--- Incoming Sensor Data ---');
     console.log('Body:', JSON.stringify(req.body));
 
-    const { grow_id = 1, temperature, humidity, soil_moisture, soil, temperature2, humidity2 } = req.body;
+    const { grow_id = 1, temperature, humidity, soil_moisture, soil, temperature2, humidity2, co2, co2_relay } = req.body;
     const finalSoil = soil_moisture || soil || 0;
 
-    console.log(`[Sensor Data] Box 1 - Temp: ${temperature}, Hum: ${humidity}, Soil: ${finalSoil}`);
+    console.log(`[Sensor Data] Box 1 - Temp: ${temperature}, Hum: ${humidity}, Soil: ${finalSoil}, CO2: ${co2}ppm`);
     if (temperature2 !== undefined) {
         console.log(`[Sensor Data] Box 2 - Temp: ${temperature2}, Hum: ${humidity2}`);
     }
@@ -221,8 +243,8 @@ app.post('/api/sensors', (req, res) => {
     db.serialize(() => {
         // Insert Box 1 Data
         db.run(
-            "INSERT INTO environment_logs (grow_id, temperature, humidity, soil_moisture, timestamp) VALUES (?, ?, ?, ?, ?)",
-            [grow_id, temperature, humidity, finalSoil, timestamp],
+            "INSERT INTO environment_logs (grow_id, temperature, humidity, soil_moisture, co2, co2_relay, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [grow_id, temperature, humidity, finalSoil, co2, co2_relay, timestamp],
             (err) => {
                 if (err) console.error("Error saving Box 1 data:", err.message);
             }
@@ -320,6 +342,25 @@ app.post('/api/chat', async (req, res) => {
     }
 
     try {
+        // Fetch recent journal entries for context
+        const recentLogs = await new Promise((resolve) => {
+            db.all("SELECT * FROM logs ORDER BY timestamp DESC LIMIT 5", [], (err, rows) => {
+                if (err || !rows) resolve([]);
+                else resolve(rows);
+            });
+        });
+
+        const context = recentLogs.map(l =>
+            `- [${new Date(l.timestamp).toLocaleDateString()}] (${l.activity_type}) ${l.title || ''}: ${l.description || ''}`
+        ).join('\n');
+
+        const systemPrompt = `Ты — Гроу-Гуру (Grow Guru). Твой стиль: дружелюбный, уличный (бро, ман), но экспертный. Тема: выращивание растений. 
+        Вот последние записи из журнала гровера (используй их для контекста, если уместно):
+        ${context}
+        
+        Твоя задача: помогать гроверу советами, анализировать его журнал и отвечать на вопросы.
+        Отвечай кратко, полезно, позитивно (используй эмодзи).`;
+
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -329,12 +370,12 @@ app.post('/api/chat', async (req, res) => {
                 "X-Title": "Grow App"
             },
             body: JSON.stringify({
-                // Using Free Gemini via OpenRouter
+                // Using a reliable free model
                 model: "google/gemini-2.0-flash-exp:free",
                 messages: [
                     {
                         role: "system",
-                        content: "Ты — Гроу-Гуру (Grow Guru). Твой стиль: дружелюбный, уличный (бро, ман), но экспертный. Тема: выращивание растений. Отвечай кратко, полезно, позитивно (используй эмодзи)."
+                        content: systemPrompt
                     },
                     { role: "user", content: message }
                 ],
@@ -345,16 +386,16 @@ app.post('/api/chat', async (req, res) => {
         const data = await response.json();
 
         if (data.error) {
-            console.error("OpenRouter API Error:", data.error);
-            return res.json({ reply: `Ошибка OpenRouter: ${data.error.message || JSON.stringify(data.error)}` });
+            console.error("OpenRouter API Error Full:", JSON.stringify(data));
+            return res.json({ reply: `Ошибка OpenRouter: ${data.error.message} (Code: ${data.error.code})` });
         }
 
         const reply = data.choices?.[0]?.message?.content || "OpenRouter молчит... Попробуй позже.";
         res.json({ reply });
 
     } catch (e) {
-        console.error("OpenRouter Error:", e);
-        res.status(500).json({ error: "Failed to connect to OpenRouter" });
+        console.error("OpenRouter Network Error:", e);
+        res.status(500).json({ error: "Failed to connect to OpenRouter. Check server logs." });
     }
 });
 

@@ -49,7 +49,8 @@ db.serialize(() => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         plant_id INTEGER,
         grow_id INTEGER,
-        activity_type TEXT, -- water, feed, note, photo
+        activity_type TEXT, -- water, feed, note, photo, journal
+        title TEXT,
         description TEXT,
         timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(plant_id) REFERENCES plants(id),

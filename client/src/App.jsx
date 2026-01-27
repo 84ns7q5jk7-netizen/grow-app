@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import PlantConstructor from './components/PlantConstructor'
 import AIAssistant from './components/AIAssistant'
+import Journal from './components/Journal'
 import DripCalculator from './components/DripCalculator'
 import AdminPanel from './components/AdminPanel'
 import TipsWidget from './components/TipsWidget'
 import SensorChart from './components/SensorChart'
-import { LayoutDashboard, Grid, Sparkles, Droplets, Thermometer, AlertTriangle, Shield, Calculator } from 'lucide-react'
+import { LayoutDashboard, Grid, Sparkles, Droplets, Thermometer, AlertTriangle, Shield, Calculator, Book } from 'lucide-react'
 import './index.css'
 
 // Widget Dashboard Component
@@ -32,6 +33,7 @@ const Dashboard = ({ onOpenAdmin }) => {
                             name: `Box #${row.grow_id}`, // Could fetch name from 'grows' table later
                             temperature: row.temperature !== undefined ? Number(row.temperature).toFixed(1) : '--',
                             humidity: row.humidity !== undefined ? Math.round(row.humidity) : '--',
+                            co2: row.co2,
                             isConnected
                         };
                     });
@@ -134,6 +136,21 @@ const Dashboard = ({ onOpenAdmin }) => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* CO2 (Only for Box 1 for now) */}
+                            {sensor.id == 1 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', gridColumn: 'span 2' }}>
+                                    <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '10px', borderRadius: '12px' }}>
+                                        <div style={{ color: '#34d399', fontWeight: 'bold', fontSize: '14px' }}>CO2</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>Углекислый газ</div>
+                                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: sensor.isConnected ? 'white' : '#64748b' }}>
+                                            {sensor.co2 || '--'} ppm
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -173,6 +190,8 @@ function App() {
                 {activeTab === 'constructor' && <PlantConstructor />}
                 {activeTab === 'ai' && <AIAssistant />}
                 {activeTab === 'calc' && <DripCalculator />}
+                {activeTab === 'calc' && <DripCalculator />}
+                {activeTab === 'journal' && <Journal />}
                 {activeTab === 'admin' && <AdminPanel />}
             </main>
 
@@ -209,6 +228,12 @@ function App() {
                         style={{ background: 'none', border: 'none', color: activeTab === 'calc' ? '#818cf8' : '#64748b', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
                     >
                         <Calculator size={24} />
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('journal')}
+                        style={{ background: 'none', border: 'none', color: activeTab === 'journal' ? '#818cf8' : '#64748b', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
+                    >
+                        <Book size={24} />
                     </button>
                     <button
                         onClick={() => setActiveTab('ai')}
