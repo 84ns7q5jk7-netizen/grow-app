@@ -33,7 +33,7 @@ const Dashboard = ({ onOpenAdmin }) => {
                             name: `Box #${row.grow_id}`, // Could fetch name from 'grows' table later
                             temperature: row.temperature !== undefined ? Number(row.temperature).toFixed(1) : '--',
                             humidity: row.humidity !== undefined ? Math.round(row.humidity) : '--',
-                            co2: row.co2,
+                            humidity: row.humidity !== undefined ? Math.round(row.humidity) : '--',
                             isConnected
                         };
                     });
@@ -137,20 +137,7 @@ const Dashboard = ({ onOpenAdmin }) => {
                                 </div>
                             </div>
 
-                            {/* CO2 (Only for Box 1 for now) */}
-                            {sensor.id == 1 && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', gridColumn: 'span 2' }}>
-                                    <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '10px', borderRadius: '12px' }}>
-                                        <div style={{ color: '#34d399', fontWeight: 'bold', fontSize: '14px' }}>CO2</div>
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>Углекислый газ</div>
-                                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: sensor.isConnected ? 'white' : '#64748b' }}>
-                                            {sensor.co2 || '--'} ppm
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+
                         </div>
                     </div>
                 ))}

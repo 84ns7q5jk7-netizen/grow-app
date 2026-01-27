@@ -230,10 +230,10 @@ app.post('/api/sensors', (req, res) => {
     console.log('--- Incoming Sensor Data ---');
     console.log('Body:', JSON.stringify(req.body));
 
-    const { grow_id = 1, temperature, humidity, soil_moisture, soil, temperature2, humidity2, co2, co2_relay } = req.body;
+    const { grow_id = 1, temperature, humidity, soil_moisture, soil, temperature2, humidity2 } = req.body;
     const finalSoil = soil_moisture || soil || 0;
 
-    console.log(`[Sensor Data] Box 1 - Temp: ${temperature}, Hum: ${humidity}, Soil: ${finalSoil}, CO2: ${co2}ppm`);
+    console.log(`[Sensor Data] Box 1 - Temp: ${temperature}, Hum: ${humidity}, Soil: ${finalSoil}`);
     if (temperature2 !== undefined) {
         console.log(`[Sensor Data] Box 2 - Temp: ${temperature2}, Hum: ${humidity2}`);
     }
@@ -243,8 +243,8 @@ app.post('/api/sensors', (req, res) => {
     db.serialize(() => {
         // Insert Box 1 Data
         db.run(
-            "INSERT INTO environment_logs (grow_id, temperature, humidity, soil_moisture, co2, co2_relay, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [grow_id, temperature, humidity, finalSoil, co2, co2_relay, timestamp],
+            "INSERT INTO environment_logs (grow_id, temperature, humidity, soil_moisture, timestamp) VALUES (?, ?, ?, ?, ?)",
+            [grow_id, temperature, humidity, finalSoil, timestamp],
             (err) => {
                 if (err) console.error("Error saving Box 1 data:", err.message);
             }
